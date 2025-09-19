@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.cpitoedifact</groupId>
+        <artifactId>cpitoedifact-converter</artifactId>
+        <version>1.0.0</version>
+    </parent>
+
+    <artifactId>cpitoedifact-converter-core</artifactId>
+    <packaging>jar</packaging>
+
+    <name>CPI to EDIFACT Converter Core</name>
+    <description>Core converter implementation using sapstern/edifactconverter</description>
+
+    <dependencies>
+        <!-- XSD Schemas for EDIFACT validation -->
+        <dependency>
+            <groupId>com.cpitoedifact</groupId>
+            <artifactId>xsd</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <!-- Sapstern EDIFACT Converter -->
+        <dependency>
+            <groupId>com.sapstern.openedifact</groupId>
+            <artifactId>openedifact-converter</artifactId>
+            <version>${edifactconverter.version}</version>
+        </dependency>
+
+        <!-- XSD Libraries for EDIFACT versions - temporarily disabled -->
+        <!--
+        <dependency>
+            <groupId>com.sapstern.openedifact</groupId>
+            <artifactId>openedifact-xsd-libs-01B</artifactId>
+            <version>1.1-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>com.sapstern.openedifact</groupId>
+            <artifactId>openedifact-xsd-libs-04B</artifactId>
+            <version>1.1-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>com.sapstern.openedifact</groupId>
+            <artifactId>openedifact-xsd-libs-11A</artifactId>
+            <version>1.1-SNAPSHOT</version>
+        </dependency>
+        -->
+
+        <!-- XML Processing for EDIFACT conversion -->
+        <dependency>
+            <groupId>javax.xml.bind</groupId>
+            <artifactId>jaxb-api</artifactId>
+            <version>2.3.1</version>
+        </dependency>
+
+
+        <!-- Testing Dependencies -->
+        <dependency>
+            <groupId>org.spockframework</groupId>
+            <artifactId>spock-core</artifactId>
+            <version>${spock.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.8.1</version>
+                <configuration>
+                    <source>11</source>
+                    <target>11</target>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.gmavenplus</groupId>
+                <artifactId>gmavenplus-plugin</artifactId>
+                <version>1.5</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>compile</goal>
+                            <goal>testCompile</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.0.0-M7</version>
+                <configuration>
+                    <includes>
+                        <include>**/*Spec.groovy</include>
+                        <include>**/*Test.java</include>
+                    </includes>
+                </configuration>
+            </plugin>
+
+            <!-- Maven Shade Plugin for creating fat JAR -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.4.1</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>com.cpitoedifact.converter.EdifactConverterFactory</mainClass>
+                                </transformer>
+                            </transformers>
+                            <finalName>cpitoedifact-converter-${project.version}-fat</finalName>
+                            <artifactSet>
+                                <includes>
+                                    <include>*:*</include>
+                                </includes>
+                            </artifactSet>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                            <shadedArtifactAttached>true</shadedArtifactAttached>
+                            <shadedClassifierName>fat</shadedClassifierName>
+                            <outputFile>${project.build.directory}/cpitoedifact-converter-${project.version}-fat.jar</outputFile>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

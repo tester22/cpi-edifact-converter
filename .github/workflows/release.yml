@@ -1,0 +1,95 @@
+name: Release
+
+on:
+  push:
+    branches: [ master ]
+  workflow_dispatch:
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+        
+    - name: Set up JDK 11
+      uses: actions/setup-java@v4
+      with:
+        java-version: '11'
+        distribution: 'temurin'
+        
+    - name: Cache Maven dependencies
+      uses: actions/cache@v4
+      with:
+        path: ~/.m2
+        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+        restore-keys: ${{ runner.os }}-m2
+        
+    - name: Build project
+      run: mvn clean package -DskipTests
+      
+    - name: Extract version from POM
+      id: version
+      run: |
+        VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Extracted version: $VERSION"
+        
+        
+    - name: Create XSD zip file
+      run: |
+        # Create a directory for XSD files
+        mkdir -p xsd-release
+        
+        # Copy XSD files from the xsd module
+        cp xsd/src/main/resources/*.xsd xsd-release/ 2>/dev/null || true
+        
+        # Also copy XSD files from libs/edifactconverter if they exist
+        find libs/edifactconverter -name "*.xsd" -type f -exec cp {} xsd-release/ \; 2>/dev/null || true
+        
+        # Create the zip file
+        cd xsd-release
+        zip -r ../xsd.zip *.xsd
+        cd ..
+        
+    - name: Prepare release artifacts
+      run: |
+        # Create release directory
+        mkdir -p release-artifacts
+        
+        # Copy XSD JAR file
+        cp xsd/target/xsd-*.jar release-artifacts/ 2>/dev/null || echo "No XSD JAR found"
+        
+        # Copy fat JAR file
+        cp cpitoedifact-converter-core/target/*-fat.jar release-artifacts/ 2>/dev/null || echo "No fat JAR found"
+        
+        # Copy XSD zip file
+        cp xsd.zip release-artifacts/ 2>/dev/null || echo "No XSD zip found"
+        
+        # List all artifacts for verification
+        echo "Release artifacts:"
+        ls -la release-artifacts/
+        
+    - name: Upload XSD JAR
+      uses: actions/upload-artifact@v4
+      with:
+        name: xsd-${{ steps.version.outputs.version }}.jar
+        path: release-artifacts/xsd-*.jar
+        retention-days: 90
+        
+    - name: Upload Fat JAR
+      uses: actions/upload-artifact@v4
+      with:
+        name: cpitoedifact-converter-${{ steps.version.outputs.version }}-fat.jar
+        path: release-artifacts/*-fat.jar
+        retention-days: 90
+        
+    - name: Upload XSD Zip
+      uses: actions/upload-artifact@v4
+      with:
+        name: xsd-${{ steps.version.outputs.version }}.zip
+        path: release-artifacts/xsd.zip
+        retention-days: 90

@@ -1,0 +1,3 @@
+[submodule "libs/edifactconverter"]
+	path = libs/edifactconverter
+	url = https://github.com/sapstern/edifactconverter.git
