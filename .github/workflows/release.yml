@@ -27,10 +27,13 @@ jobs:
         path: ~/.m2
         key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
         restore-keys: ${{ runner.os }}-m2
-        
+
     - name: Build project
       run: mvn clean package -DskipTests
-      
+
+    - name: Run tests
+      run: mvn test
+
     - name: Extract version from POM
       id: version
       run: |
